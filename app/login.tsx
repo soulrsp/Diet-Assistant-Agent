@@ -3,15 +3,15 @@ import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, TextInput } from
 
 import { Text, View } from '@/components/Themed';
 import { useAuth } from '@/lib/authContext';
-import { useGoogleSignIn } from '@/lib/googleAuth';
+import { signInWithGoogle } from '@/lib/googleAuth';
 
 export default function LoginScreen() {
   const { signIn } = useAuth();
-  const { request, promptAsync, isConfigured } = useGoogleSignIn();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [googleSubmitting, setGoogleSubmitting] = useState(false);
 
   async function handleSubmit() {
     setError(null);
@@ -27,10 +27,13 @@ export default function LoginScreen() {
 
   async function handleGoogleSignIn() {
     setError(null);
+    setGoogleSubmitting(true);
     try {
-      await promptAsync();
+      await signInWithGoogle();
     } catch (e) {
-      setError('Google 로그인에 실패했습니다.');
+      setError('Google 로그인에 실패했습니다. 잠시 후 다시 시도해주세요.');
+    } finally {
+      setGoogleSubmitting(false);
     }
   }
 
@@ -41,22 +44,20 @@ export default function LoginScreen() {
       <Text style={styles.title}>다이어트 어시스턴트</Text>
       <Text style={styles.subtitle}>Firebase 콘솔에서 만든 계정으로 로그인해주세요.</Text>
 
-      {isConfigured && (
-        <>
-          <Pressable
-            style={[styles.googleButton, !request && styles.buttonDisabled]}
-            onPress={handleGoogleSignIn}
-            disabled={!request}>
-            <Text style={styles.googleButtonText}>G  Google로 로그인</Text>
-          </Pressable>
+      <Pressable
+        style={[styles.googleButton, googleSubmitting && styles.buttonDisabled]}
+        onPress={handleGoogleSignIn}
+        disabled={googleSubmitting}>
+        <Text style={styles.googleButtonText}>
+          {googleSubmitting ? '로그인 중...' : 'G  Google로 로그인'}
+        </Text>
+      </Pressable>
 
-          <View style={styles.dividerRow}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>또는</Text>
-            <View style={styles.dividerLine} />
-          </View>
-        </>
-      )}
+      <View style={styles.dividerRow}>
+        <View style={styles.dividerLine} />
+        <Text style={styles.dividerText}>또는</Text>
+        <View style={styles.dividerLine} />
+      </View>
 
       <TextInput
         style={styles.input}

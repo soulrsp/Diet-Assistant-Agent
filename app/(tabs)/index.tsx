@@ -5,10 +5,12 @@ import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput } fro
 
 import Character from '@/components/Character';
 import MealSlotCard from '@/components/MealSlotCard';
+import SupplementCheck from '@/components/SupplementCheck';
 import { Text, View } from '@/components/Themed';
 import { computeCharacterMood } from '@/lib/characterMood';
 import { DUMMY_GOALS } from '@/lib/dummyData';
 import {
+  getCameraCaptureEnabled,
   getCharacterEnabled,
   getDailyLog,
   getGoals,
@@ -16,26 +18,29 @@ import {
   saveDailyLog,
   todayKey,
 } from '@/lib/storage';
-import { DailyLog, Goals, MealItem, MealSlotId } from '@/lib/types';
+import { CHECK_ONLY_SLOTS, DailyLog, Goals, MealItem, MealSlotId } from '@/lib/types';
 
 export default function TodayScreen() {
   const [mealOrder, setMealOrder] = useState<MealSlotId[]>([]);
   const [log, setLog] = useState<DailyLog | null>(null);
   const [goals, setGoals] = useState<Goals>(DUMMY_GOALS);
   const [characterEnabled, setCharacterEnabled] = useState(true);
+  const [cameraCaptureEnabled, setCameraCaptureEnabled] = useState(false);
   const [weightText, setWeightText] = useState('');
 
   const load = useCallback(async () => {
-    const [order, dailyLog, charEnabled, savedGoals] = await Promise.all([
+    const [order, dailyLog, charEnabled, savedGoals, cameraEnabled] = await Promise.all([
       getMealOrder(),
       getDailyLog(todayKey()),
       getCharacterEnabled(),
       getGoals(),
+      getCameraCaptureEnabled(),
     ]);
     setMealOrder(order);
     setLog(dailyLog);
     setCharacterEnabled(charEnabled);
     setGoals(savedGoals ?? DUMMY_GOALS);
+    setCameraCaptureEnabled(cameraEnabled);
     setWeightText(dailyLog.weightKg ? String(dailyLog.weightKg) : '');
   }, []);
 
@@ -76,6 +81,15 @@ export default function TodayScreen() {
     persist(next);
   }
 
+  function handleToggleCheck(slot: MealSlotId, checked: boolean) {
+    if (!log) return;
+    const next: DailyLog = {
+      ...log,
+      checkedSlots: { ...log.checkedSlots, [slot]: checked },
+    };
+    persist(next);
+  }
+
   function handleWeightBlur() {
     if (!log) return;
     const value = parseFloat(weightText);
@@ -110,15 +124,25 @@ export default function TodayScreen() {
           />
         </View>
 
-        {mealOrder.map((slot) => (
-          <MealSlotCard
-            key={slot}
-            slot={slot}
-            items={log.meals[slot]}
-            onAdd={(item) => handleAdd(slot, item)}
-            onRemove={(itemId) => handleRemove(slot, itemId)}
-          />
-        ))}
+        {mealOrder.map((slot) =>
+          CHECK_ONLY_SLOTS.includes(slot) ? (
+            <SupplementCheck
+              key={slot}
+              slot={slot}
+              checked={!!log.checkedSlots[slot]}
+              onToggle={(checked) => handleToggleCheck(slot, checked)}
+            />
+          ) : (
+            <MealSlotCard
+              key={slot}
+              slot={slot}
+              items={log.meals[slot]}
+              cameraCaptureEnabled={cameraCaptureEnabled}
+              onAdd={(item) => handleAdd(slot, item)}
+              onRemove={(itemId) => handleRemove(slot, itemId)}
+            />
+          )
+        )}
       </ScrollView>
     </KeyboardAvoidingView>
   );

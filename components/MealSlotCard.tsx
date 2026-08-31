@@ -13,13 +13,14 @@ import { MealItem, MealSlotId, MEAL_SLOT_LABEL, Macros } from '@/lib/types';
 type Props = {
   slot: MealSlotId;
   items: MealItem[];
+  cameraCaptureEnabled: boolean;
   onAdd: (item: MealItem) => void;
   onRemove: (itemId: string) => void;
 };
 
 type Mode = 'idle' | 'processing' | 'confirm' | 'search';
 
-export default function MealSlotCard({ slot, items, onAdd, onRemove }: Props) {
+export default function MealSlotCard({ slot, items, cameraCaptureEnabled, onAdd, onRemove }: Props) {
   const [mode, setMode] = useState<Mode>('idle');
   const [pendingPhotoUri, setPendingPhotoUri] = useState<string | undefined>();
   const [pendingResult, setPendingResult] = useState<(Macros & { name: string; confidence?: number }) | null>(null);
@@ -113,9 +114,14 @@ export default function MealSlotCard({ slot, items, onAdd, onRemove }: Props) {
 
       {mode === 'idle' && (
         <View style={styles.actionRow}>
-          <Pressable style={styles.actionBtn} onPress={() => pickAndRecognize(true)}>
-            <Text style={styles.actionBtnText}>📷 사진으로 기록</Text>
+          <Pressable style={styles.actionBtn} onPress={() => pickAndRecognize(false)}>
+            <Text style={styles.actionBtnText}>🖼 사진첩에서 기록</Text>
           </Pressable>
+          {cameraCaptureEnabled && (
+            <Pressable style={styles.actionBtnGhost} onPress={() => pickAndRecognize(true)}>
+              <Text style={styles.actionBtnGhostText}>📷 카메라로 촬영</Text>
+            </Pressable>
+          )}
           <Pressable style={styles.actionBtnGhost} onPress={() => setMode('search')}>
             <Text style={styles.actionBtnGhostText}>직접 검색</Text>
           </Pressable>

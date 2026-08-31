@@ -7,10 +7,12 @@ import { useAuth } from '@/lib/authContext';
 import { DUMMY_GOALS } from '@/lib/dummyData';
 import { applyReminderSchedule } from '@/lib/notifications';
 import {
+  getCameraCaptureEnabled,
   getCharacterEnabled,
   getGoals,
   getMealOrder,
   getReminderSettings,
+  setCameraCaptureEnabled,
   setCharacterEnabled,
   setGoals,
   setMealOrder,
@@ -26,15 +28,17 @@ export default function SettingsScreen() {
   const [calorieText, setCalorieText] = useState('');
   const [reminder, setReminder] = useState<ReminderSettings>({ enabled: false, hour: 21, minute: 0 });
   const [characterOn, setCharacterOn] = useState(true);
+  const [cameraOn, setCameraOn] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
       (async () => {
-        const [mealOrder, savedGoals, savedReminder, charEnabled] = await Promise.all([
+        const [mealOrder, savedGoals, savedReminder, charEnabled, cameraEnabled] = await Promise.all([
           getMealOrder(),
           getGoals(),
           getReminderSettings(),
           getCharacterEnabled(),
+          getCameraCaptureEnabled(),
         ]);
         setOrder(mealOrder);
         const g = savedGoals ?? DUMMY_GOALS;
@@ -43,6 +47,7 @@ export default function SettingsScreen() {
         setCalorieText(String(g.targetCalories));
         setReminder(savedReminder);
         setCharacterOn(charEnabled);
+        setCameraOn(cameraEnabled);
       })();
     }, [])
   );
@@ -84,6 +89,11 @@ export default function SettingsScreen() {
   async function toggleCharacter(value: boolean) {
     setCharacterOn(value);
     await setCharacterEnabled(value);
+  }
+
+  async function toggleCamera(value: boolean) {
+    setCameraOn(value);
+    await setCameraCaptureEnabled(value);
   }
 
   return (
@@ -142,6 +152,16 @@ export default function SettingsScreen() {
       <Section title="캐릭터">
         <Row label="새싹이 캐릭터 표시">
           <Switch value={characterOn} onValueChange={toggleCharacter} />
+        </Row>
+      </Section>
+
+      <Section title="사진 기록">
+        <Text style={styles.webNotice}>
+          기본은 사진첩에서 고르는 방식이에요. 켜면 카메라로 바로 촬영하는 버튼이 추가로
+          나타납니다.
+        </Text>
+        <Row label="카메라로 바로 촬영 허용">
+          <Switch value={cameraOn} onValueChange={toggleCamera} />
         </Row>
       </Section>
 

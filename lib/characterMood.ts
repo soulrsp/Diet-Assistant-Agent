@@ -18,8 +18,9 @@ export function computeCharacterMood(
     .flat()
     .reduce((sum, item) => sum + item.calories, 0);
   const loggedMealCount = Object.values(log.meals).flat().length;
+  const hasCheckedSlot = Object.values(log.checkedSlots).some(Boolean);
 
-  const hasAnyLog = loggedMealCount > 0 || typeof log.weightKg === 'number';
+  const hasAnyLog = loggedMealCount > 0 || typeof log.weightKg === 'number' || hasCheckedSlot;
   if (!hasAnyLog) {
     return { mood: 'worst', message: '오늘 기록이 아직 없어요' };
   }

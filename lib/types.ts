@@ -1,5 +1,8 @@
 export type MealSlotId = 'breakfast' | 'snack' | 'supplement' | 'lunch' | 'dinner';
 
+// 끼니 슬롯 중 사진/칼로리 기록이 아니라 복용 여부 체크만 하는 슬롯
+export const CHECK_ONLY_SLOTS: MealSlotId[] = ['supplement'];
+
 export const DEFAULT_MEAL_ORDER: MealSlotId[] = [
   'breakfast',
   'snack',
@@ -35,6 +38,7 @@ export type DailyLog = {
   dateKey: string;
   weightKg?: number;
   meals: Record<MealSlotId, MealItem[]>;
+  checkedSlots: Partial<Record<MealSlotId, boolean>>; // 영양제처럼 사진 없이 복용 여부만 체크하는 슬롯
 };
 
 export type Goals = {

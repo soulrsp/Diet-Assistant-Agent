@@ -44,6 +44,7 @@ export function emptyDailyLog(dateKey: string): DailyLog {
       lunch: [],
       dinner: [],
     },
+    checkedSlots: {},
   };
 }
 
@@ -97,6 +98,16 @@ export async function getCharacterEnabled(): Promise<boolean> {
 
 export async function setCharacterEnabled(enabled: boolean): Promise<void> {
   await setDoc(preferencesRef(), { characterEnabled: enabled }, { merge: true });
+}
+
+export async function getCameraCaptureEnabled(): Promise<boolean> {
+  const snap = await getDoc(preferencesRef());
+  const value = snap.data()?.cameraCaptureEnabled as boolean | undefined;
+  return value ?? false;
+}
+
+export async function setCameraCaptureEnabled(enabled: boolean): Promise<void> {
+  await setDoc(preferencesRef(), { cameraCaptureEnabled: enabled }, { merge: true });
 }
 
 export async function getDailyLog(dateKey: string): Promise<DailyLog> {
