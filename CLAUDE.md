@@ -39,6 +39,8 @@
 | 19 | 로그인 유지 방식 | **한 번 로그인하면 기기에 세션 유지** (`getReactNativePersistence` + AsyncStorage) | 앱 재실행마다 로그인 요구하지 않음 |
 | 20 | 추이 탭 데이터 소스 | **Firestore에 실제 몸무게 기록이 있으면 실제 데이터, 없으면 더미 데이터로 자동 전환** | `lib/trend.ts`의 `getTrendPoints()`가 처리 |
 | 21 | 식단 사진 업로드 시점 | **일단 로컬 uri만 유지, Firebase Storage 업로드는 다음 단계로 보류** | 지금은 Auth+Firestore(텍스트 데이터)만 연동 완료 |
+| 22 | 소스 코드 저장소 | **GitHub public 저장소** (https://github.com/soulrsp/Diet-Assistant-Agent) | Firebase 설정값이 코드에 포함되지만 클라이언트 키는 공개돼도 무방한 설계(#6)이므로 유지. 대신 Firestore 보안 규칙을 반드시 좁혀야 함 |
+| 23 | 배포/접속 방식 | **Expo(EAS) 링크 — Expo Go 앱으로 접속** | 카메라·눈바디 로컬저장·알림 등 네이티브 기능이 전부 정상 동작하는 방식을 선택. GitHub Pages(웹 브라우저) 방식은 채택하지 않음(네이티브 기능 제한) |
 
 ## 반영하지 않기로 한 것 (기존 앱 대비)
 
