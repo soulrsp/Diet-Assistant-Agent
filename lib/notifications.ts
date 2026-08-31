@@ -14,6 +14,8 @@ Notifications.setNotificationHandler({
 
 const DAILY_REMINDER_ID = 'daily-diet-reminder';
 
+export const isNotificationSupportedPlatform = Platform.OS !== 'web';
+
 export async function requestNotificationPermission(): Promise<boolean> {
   const current = await Notifications.getPermissionsAsync();
   if (current.granted) return true;
@@ -22,6 +24,9 @@ export async function requestNotificationPermission(): Promise<boolean> {
 }
 
 export async function applyReminderSchedule(settings: ReminderSettings): Promise<void> {
+  // 웹은 브라우저를 열어둬야만 알림이 오고, iOS Safari는 지원이 거의 없어 시도하지 않는다.
+  if (!isNotificationSupportedPlatform) return;
+
   await Notifications.cancelScheduledNotificationAsync(DAILY_REMINDER_ID).catch(() => {});
 
   if (!settings.enabled) return;
@@ -42,5 +47,3 @@ export async function applyReminderSchedule(settings: ReminderSettings): Promise
     },
   });
 }
-
-export const isNotificationSupportedPlatform = Platform.OS !== 'web';

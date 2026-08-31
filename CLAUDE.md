@@ -19,7 +19,7 @@
 | # | 질문 | 결정 | 비고 |
 |---|------|------|------|
 | 1 | 개발 스택 | **React Native (Expo)** | 사용자가 미정 → 추천 받음. iOS/Android 동시 대응, 사이드로드 용이 |
-| 2 | 배포 방식 | **사이드로드 (개인 배포)** | 앱스토어/플레이스토어 정식 등록 안 함. APK 직접 설치 / iOS는 개발자 계정으로 개인 설치 |
+| 2 | 배포 방식 | **사이드로드 (개인 배포)** — ~~APK/개발자 계정 네이티브 설치~~ → **#27에서 웹(GitHub Pages)으로 최종 변경** | 앱스토어/플레이스토어 정식 등록 안 함 원칙은 유지 |
 | 3 | 음식 인식 방식 | **자동 인식(Vision AI) 우선 + 실패 시 수동 검색** | 1차: 이미지 인식으로 음식명 추정. 정확도 문제 시 2차로 수동 검색 기능 추가 구현 |
 | 4 | 데이터 저장소 | **Firebase (클라우드)** — 단, 눈바디 사진은 예외 | 식단/몸무게/설정 등은 Firebase, 나중에 두 사람 동기화 붙이기 용이 |
 | 5 | 눈바디 사진 저장 위치 | **사진만 기기 내 로컬 저장**, 나머지 데이터만 클라우드 | 가장 민감한 개인 신체 이미지이므로 외부 업로드 안 함 |
@@ -40,10 +40,12 @@
 | 20 | 추이 탭 데이터 소스 | **Firestore에 실제 몸무게 기록이 있으면 실제 데이터, 없으면 더미 데이터로 자동 전환** | `lib/trend.ts`의 `getTrendPoints()`가 처리 |
 | 21 | 식단 사진 업로드 시점 | **일단 로컬 uri만 유지, Firebase Storage 업로드는 다음 단계로 보류** | 지금은 Auth+Firestore(텍스트 데이터)만 연동 완료 |
 | 22 | 소스 코드 저장소 | **GitHub public 저장소** (https://github.com/soulrsp/Diet-Assistant-Agent) | Firebase 설정값이 코드에 포함되지만 클라이언트 키는 공개돼도 무방한 설계(#6)이므로 유지. 대신 Firestore 보안 규칙을 반드시 좁혀야 함 |
-| 23 | 배포/접속 방식 | **Expo(EAS) 링크 — Expo Go 앱으로 접속** | 카메라·눈바디 로컬저장·알림 등 네이티브 기능이 전부 정상 동작하는 방식을 선택. GitHub Pages(웹 브라우저) 방식은 채택하지 않음(네이티브 기능 제한) |
+| 23 | 배포/접속 방식 (폐기됨) | ~~Expo(EAS) 링크 — Expo Go 앱으로 접속~~ | `eas update:configure`가 설정하는 `runtimeVersion`이 있으면 Expo Go에서 해당 업데이트를 아예 열 수 없다는 것을 실제 테스트 중 발견(Expo 공식 문서 확인). 커스텀 dev client 빌드가 필요한데 iOS는 Apple Developer Program(연 $99)이 사실상 필수라 #27로 대체 |
 | 24 | 캐릭터 디자인 | **오리지널 "새싹이" 디자인** (동글한 눈물방울형 몸통 + 쌍둥이 새싹 잎) | 사용자가 로스트아크 모코코 캐릭터를 요청했으나, 모코코는 스마일게이트 저작권 캐릭터라 그대로 재현하지 않고 컨셉만 참고해 새로 디자인(`components/Character.tsx`). 비영리 목적이어도 저작권 문제는 동일하다고 안내함 |
-| 25 | Google 로그인 방식 | **`expo-auth-session` 브라우저 기반 로그인** (Expo Go 유지) | 네이티브 Google Sign-In은 EAS Build(커스텀 개발 클라이언트)가 필요해 #23의 Expo Go 방식과 충돌. expo-auth-session은 Expo 공식 문서상 deprecated 표시되어 있지만 Expo Go에서 동작하는 유일한 방법이라 채택. 웹 클라이언트 ID는 `lib/googleAuth.ts`에 설정 완료, 리디렉션 URI 등록은 실기기 테스트 후 진행 |
+| 25 | Google 로그인 방식 | **`expo-auth-session` 브라우저 기반 로그인** | #27에서 웹 전용으로 전환되며 오히려 궁합이 더 좋아짐(순수 웹 OAuth 리디렉션). 웹 클라이언트 ID는 `lib/googleAuth.ts`에 설정 완료. GitHub Pages 배포 후에는 Google Cloud Console 리디렉션 URI에 실제 배포 주소(`https://soulrsp.github.io/Diet-Assistant-Agent`)를 등록해야 함 |
 | 26 | 캐릭터 기분 5단계 | **great / good / neutral / bad(주황) / worst(빨강)** — 별도 "기록 없음" 상태는 두지 않고 worst에 통합 | 판단 기준: 오늘 섭취 칼로리 또는 몸무게가 목표 대비 초과한 비율 중 큰 값 기준 0~15% 초과 시 bad, 15% 초과 시 worst. 초과가 없으면 기록량(끼니 수)으로 great/good/neutral 판단. 로직은 `lib/characterMood.ts` |
+| 27 | 최종 배포 방식 | **네이티브 앱 포기, GitHub Pages 웹 버전만 배포** (https://soulrsp.github.io/Diet-Assistant-Agent) | #23이 막히면서 재검토. iOS 실기기 네이티브 설치 비용($99/년)을 피하기 위해 웹 전용으로 전환. main 브랜치에 push하면 GitHub Actions(`.github/workflows/deploy.yml`)가 자동으로 `expo export -p web` 후 gh-pages 브랜치에 배포 |
+| 28 | 웹 전환에 따른 기능 제약 | **눈바디 탭은 웹에서 일단 비활성화**(안내 문구만 표시), 카메라 촬영은 브라우저 지원 범위 내에서만, 알림은 탭을 열어둔 상태에서만 동작 | `expo-file-system`의 로컬 파일 저장이 웹에서 지원되지 않아 발생하는 제약. 추후 IndexedDB 기반 웹 저장소를 추가하는 것을 검토 중 |
 
 ## 반영하지 않기로 한 것 (기존 앱 대비)
 
@@ -57,8 +59,10 @@
 - Firestore 보안 규칙이 아직 테스트 모드(30일 후 자동 잠김, 그 전엔 인증 여부와 무관하게 개방)입니다. 실사용 전에 `request.auth.uid == userId` 조건으로 규칙을 좁혀야 합니다.
 - 식단 사진의 Firebase Storage 업로드는 아직 연동 전입니다(로컬 uri만 사용 중). 다음 단계로 예정.
 - Firebase 콘솔에서 이메일/비밀번호 계정 2개(본인 + 여자친구)가 실제로 생성되었는지는 Claude가 확인할 수 없습니다(로그인 필요). 사용자가 직접 로그인 테스트로 확인 필요.
-- Google 로그인은 코드만 구현된 상태이고, Firebase 콘솔에서 Google 제공업체 활성화 + `lib/googleAuth.ts`의 `GOOGLE_WEB_CLIENT_ID` 값 교체 + Google Cloud Console에 리디렉션 URI 등록이 남아있습니다. 실기기에서 직접 테스트/조정이 필요합니다.
-- `app.json`의 android permissions에 `android.permission.RECORD_AUDIO`가 중복 등록되어 있습니다(사용자가 EAS 관련 작업 중 자동 추가된 것으로 보임). 실제로 오디오 녹음 기능을 쓰지 않는다면 정리가 필요할 수 있습니다.
+- Google 로그인 웹 클라이언트 ID는 설정 완료. GitHub Pages 배포 URL(`https://soulrsp.github.io/Diet-Assistant-Agent`)을 Firebase 콘솔의 승인된 도메인, Google Cloud Console의 승인된 리디렉션 URI에 등록해야 최종 동작합니다.
+- GitHub Pages 활성화(Settings → Pages → Source: gh-pages 브랜치)가 아직 필요합니다. `main`에 push하면 GitHub Actions가 gh-pages 브랜치까지는 만들어주지만, Pages 노출 설정은 저장소 설정에서 한 번 켜야 합니다.
+- `app.json`에 EAS/네이티브 배포 관련 설정(`extra.eas`, `owner`, `updates`, `runtimeVersion`)이 남아있습니다. 네이티브 배포를 포기했으므로 더 이상 쓰이지 않지만, 나중에 다시 필요할 수 있어 일단 삭제하지 않았습니다.
+- `app.json`의 android permissions에 `android.permission.RECORD_AUDIO`가 중복 등록되어 있습니다. 네이티브 배포를 포기했으므로 실질적 영향은 없습니다.
 
 ## 참고 자료
 

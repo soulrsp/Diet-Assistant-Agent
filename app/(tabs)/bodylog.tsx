@@ -3,13 +3,30 @@ import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
 import { useCallback, useState } from 'react';
 import { useFocusEffect } from 'expo-router';
-import { Alert, FlatList, Pressable, StyleSheet } from 'react-native';
+import { Alert, FlatList, Platform, Pressable, StyleSheet } from 'react-native';
 
 import { Text, View } from '@/components/Themed';
 import { BodyPhotoEntry, listBodyPhotos, saveBodyPhoto } from '@/lib/bodyPhotoStorage';
 import { todayKey } from '@/lib/storage';
 
 export default function BodyLogScreen() {
+  if (Platform.OS === 'web') {
+    return (
+      <View style={styles.container}>
+        <View style={styles.noticeBox}>
+          <Text style={styles.noticeText}>
+            눈바디 사진은 이 기기에만 저장되는 기능이라, 지금 웹 버전에서는 아직 지원하지
+            않아요. 나중에 브라우저 저장소를 지원할 예정입니다.
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
+  return <BodyLogNativeScreen />;
+}
+
+function BodyLogNativeScreen() {
   const [photos, setPhotos] = useState<BodyPhotoEntry[]>([]);
   const [selected, setSelected] = useState<BodyPhotoEntry | null>(null);
 

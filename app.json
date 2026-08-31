@@ -55,7 +55,8 @@
       ]
     ],
     "experiments": {
-      "typedRoutes": true
+      "typedRoutes": true,
+      "baseUrl": "/Diet-Assistant-Agent"
     },
     "extra": {
       "router": {},

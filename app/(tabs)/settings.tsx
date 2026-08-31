@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useFocusEffect } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Switch, TextInput } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, Switch, TextInput } from 'react-native';
 
 import { Text, View } from '@/components/Themed';
 import { useAuth } from '@/lib/authContext';
@@ -110,6 +110,12 @@ export default function SettingsScreen() {
       </Section>
 
       <Section title="알림">
+        {Platform.OS === 'web' && (
+          <Text style={styles.webNotice}>
+            웹 브라우저에서는 이 탭을 열어둔 상태에서만, 그리고 브라우저가 지원하는 경우에만
+            알림이 옵니다.
+          </Text>
+        )}
         <Row label="매일 기록 리마인더">
           <Switch value={reminder.enabled} onValueChange={toggleReminder} />
         </Row>
@@ -329,5 +335,10 @@ const styles = StyleSheet.create({
   signOutBtnText: {
     fontSize: 13,
     color: '#B4791A',
+  },
+  webNotice: {
+    fontSize: 12,
+    color: '#B4791A',
+    marginBottom: 4,
   },
 });
