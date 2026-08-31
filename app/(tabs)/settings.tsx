@@ -134,7 +134,7 @@ export default function SettingsScreen() {
       </Section>
 
       <Section title="캐릭터">
-        <Row label="지방이 캐릭터 표시">
+        <Row label="새싹이 캐릭터 표시">
           <Switch value={characterOn} onValueChange={toggleCharacter} />
         </Row>
       </Section>

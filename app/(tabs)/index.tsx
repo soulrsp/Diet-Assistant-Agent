@@ -3,7 +3,7 @@ import { useCallback, useState } from 'react';
 import { useFocusEffect } from 'expo-router';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput } from 'react-native';
 
-import FatCharacter, { CharacterMood } from '@/components/FatCharacter';
+import Character, { CharacterMood } from '@/components/Character';
 import MealSlotCard from '@/components/MealSlotCard';
 import { Text, View } from '@/components/Themed';
 import {
@@ -93,7 +93,7 @@ export default function TodayScreen() {
       <ScrollView contentContainerStyle={styles.scroll}>
         <Text style={styles.dateLabel}>{dayjs().format('YYYY년 M월 D일 dddd')}</Text>
 
-        {characterEnabled && <FatCharacter mood={mood} message={moodMessage} />}
+        {characterEnabled && <Character mood={mood} message={moodMessage} />}
 
         <View style={styles.summaryRow}>
           <Text style={styles.summaryText}>오늘 섭취 칼로리: {totalCalories} kcal</Text>

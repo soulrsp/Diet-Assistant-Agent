@@ -3,9 +3,11 @@ import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, TextInput } from
 
 import { Text, View } from '@/components/Themed';
 import { useAuth } from '@/lib/authContext';
+import { useGoogleSignIn } from '@/lib/googleAuth';
 
 export default function LoginScreen() {
   const { signIn } = useAuth();
+  const { request, promptAsync, isConfigured } = useGoogleSignIn();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -23,12 +25,38 @@ export default function LoginScreen() {
     }
   }
 
+  async function handleGoogleSignIn() {
+    setError(null);
+    try {
+      await promptAsync();
+    } catch (e) {
+      setError('Google 로그인에 실패했습니다.');
+    }
+  }
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <Text style={styles.title}>다이어트 어시스턴트</Text>
       <Text style={styles.subtitle}>Firebase 콘솔에서 만든 계정으로 로그인해주세요.</Text>
+
+      {isConfigured && (
+        <>
+          <Pressable
+            style={[styles.googleButton, !request && styles.buttonDisabled]}
+            onPress={handleGoogleSignIn}
+            disabled={!request}>
+            <Text style={styles.googleButtonText}>G  Google로 로그인</Text>
+          </Pressable>
+
+          <View style={styles.dividerRow}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>또는</Text>
+            <View style={styles.dividerLine} />
+          </View>
+        </>
+      )}
 
       <TextInput
         style={styles.input}
@@ -102,5 +130,31 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '700',
     fontSize: 15,
+  },
+  googleButton: {
+    borderWidth: 1,
+    borderColor: '#E2DFCF',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  googleButtonText: {
+    fontWeight: '700',
+    fontSize: 15,
+  },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginVertical: 4,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#E2DFCF',
+  },
+  dividerText: {
+    fontSize: 12,
+    color: '#6C7263',
   },
 });

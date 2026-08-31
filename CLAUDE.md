@@ -28,7 +28,7 @@
 | 8 | 목표 설정 기능 | **필요함** — 목표 체중 + 일일 칼로리 목표 설정, 그래프에 목표선 표시 | |
 | 9 | 벤치마킹 방식 | **Claude가 웹 조사 후 비교표 작성** (inout 외 Noom, MyFitnessPal 등) | 완료 — 설계 플랜 문서 참고 |
 | 10 | 알림/리마인더 | **필요함** — 매일 지정 시간에 기록 누락 방지용 푸시 알림 | |
-| 11 | 캐릭터 요소 | **넣는다** — inout처럼 포인트/미션 시스템은 넣지 않되, 지방 닮은 캐릭터가 몸무게 변화·기록 여부에 따라 표정/반응/배경이 바뀌는 정도로 가볍게 구현 | 사용자가 참고 이미지 링크 공유 (지방이 캐릭터류) |
+| 11 | 캐릭터 요소 | **넣는다** — inout처럼 포인트/미션 시스템은 넣지 않되, 캐릭터가 몸무게 변화·기록 여부에 따라 표정/반응/배경이 바뀌는 정도로 가볍게 구현 | 초기엔 "지방이류" 캐릭터로 기획했으나 #24에서 새싹 캐릭터로 디자인 변경 |
 | 12 | 식단 탭 항목 순서 | **설정 화면에서 사용자가 직접 순서 커스터마이징 가능** (아침/간식/영양제/점심/저녁 등) | 고정 순서 강제하지 않음 |
 | 13 | Firebase SDK 방식 | **Firebase JS SDK (v9 모듈러)** | React Native Firebase(네이티브 모듈)는 Expo 관리형 워크플로우에 EAS 빌드가 추가로 필요해 복잡함. JS SDK는 Expo Go에서 바로 동작 |
 | 14 | 사용할 Firebase 제품 | **Authentication, Firestore, Storage** | Cloud Functions는 API 키를 클라이언트에 두기로 했으므로 불필요. 알림은 Firebase 없이 `expo-notifications` 로컬 스케줄링으로 처리 |
@@ -41,6 +41,8 @@
 | 21 | 식단 사진 업로드 시점 | **일단 로컬 uri만 유지, Firebase Storage 업로드는 다음 단계로 보류** | 지금은 Auth+Firestore(텍스트 데이터)만 연동 완료 |
 | 22 | 소스 코드 저장소 | **GitHub public 저장소** (https://github.com/soulrsp/Diet-Assistant-Agent) | Firebase 설정값이 코드에 포함되지만 클라이언트 키는 공개돼도 무방한 설계(#6)이므로 유지. 대신 Firestore 보안 규칙을 반드시 좁혀야 함 |
 | 23 | 배포/접속 방식 | **Expo(EAS) 링크 — Expo Go 앱으로 접속** | 카메라·눈바디 로컬저장·알림 등 네이티브 기능이 전부 정상 동작하는 방식을 선택. GitHub Pages(웹 브라우저) 방식은 채택하지 않음(네이티브 기능 제한) |
+| 24 | 캐릭터 디자인 | **오리지널 "새싹이" 디자인** (동글한 눈물방울형 몸통 + 쌍둥이 새싹 잎) | 사용자가 로스트아크 모코코st 캐릭터를 요청했으나, 모코코는 스마일게이트 저작권 캐릭터라 그대로 재현하지 않고 컨셉만 참고해 새로 디자인(`components/Character.tsx`) |
+| 25 | Google 로그인 방식 | **`expo-auth-session` 브라우저 기반 로그인** (Expo Go 유지) | 네이티브 Google Sign-In은 EAS Build(커스텀 개발 클라이언트)가 필요해 #23의 Expo Go 방식과 충돌. expo-auth-session은 Expo 공식 문서상 deprecated 표시되어 있지만 Expo Go에서 동작하는 유일한 방법이라 채택 |
 
 ## 반영하지 않기로 한 것 (기존 앱 대비)
 
@@ -54,6 +56,8 @@
 - Firestore 보안 규칙이 아직 테스트 모드(30일 후 자동 잠김, 그 전엔 인증 여부와 무관하게 개방)입니다. 실사용 전에 `request.auth.uid == userId` 조건으로 규칙을 좁혀야 합니다.
 - 식단 사진의 Firebase Storage 업로드는 아직 연동 전입니다(로컬 uri만 사용 중). 다음 단계로 예정.
 - Firebase 콘솔에서 이메일/비밀번호 계정 2개(본인 + 여자친구)가 실제로 생성되었는지는 Claude가 확인할 수 없습니다(로그인 필요). 사용자가 직접 로그인 테스트로 확인 필요.
+- Google 로그인은 코드만 구현된 상태이고, Firebase 콘솔에서 Google 제공업체 활성화 + `lib/googleAuth.ts`의 `GOOGLE_WEB_CLIENT_ID` 값 교체 + Google Cloud Console에 리디렉션 URI 등록이 남아있습니다. 실기기에서 직접 테스트/조정이 필요합니다.
+- `app.json`의 android permissions에 `android.permission.RECORD_AUDIO`가 중복 등록되어 있습니다(사용자가 EAS 관련 작업 중 자동 추가된 것으로 보임). 실제로 오디오 녹음 기능을 쓰지 않는다면 정리가 필요할 수 있습니다.
 
 ## 참고 자료
 
