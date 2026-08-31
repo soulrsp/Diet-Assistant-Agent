@@ -3,33 +3,39 @@ import { useCallback, useState } from 'react';
 import { useFocusEffect } from 'expo-router';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput } from 'react-native';
 
-import Character, { CharacterMood } from '@/components/Character';
+import Character from '@/components/Character';
 import MealSlotCard from '@/components/MealSlotCard';
 import { Text, View } from '@/components/Themed';
+import { computeCharacterMood } from '@/lib/characterMood';
+import { DUMMY_GOALS } from '@/lib/dummyData';
 import {
   getCharacterEnabled,
   getDailyLog,
+  getGoals,
   getMealOrder,
   saveDailyLog,
   todayKey,
 } from '@/lib/storage';
-import { DailyLog, MealItem, MealSlotId } from '@/lib/types';
+import { DailyLog, Goals, MealItem, MealSlotId } from '@/lib/types';
 
 export default function TodayScreen() {
   const [mealOrder, setMealOrder] = useState<MealSlotId[]>([]);
   const [log, setLog] = useState<DailyLog | null>(null);
+  const [goals, setGoals] = useState<Goals>(DUMMY_GOALS);
   const [characterEnabled, setCharacterEnabled] = useState(true);
   const [weightText, setWeightText] = useState('');
 
   const load = useCallback(async () => {
-    const [order, dailyLog, charEnabled] = await Promise.all([
+    const [order, dailyLog, charEnabled, savedGoals] = await Promise.all([
       getMealOrder(),
       getDailyLog(todayKey()),
       getCharacterEnabled(),
+      getGoals(),
     ]);
     setMealOrder(order);
     setLog(dailyLog);
     setCharacterEnabled(charEnabled);
+    setGoals(savedGoals ?? DUMMY_GOALS);
     setWeightText(dailyLog.weightKg ? String(dailyLog.weightKg) : '');
   }, []);
 
@@ -46,8 +52,6 @@ export default function TodayScreen() {
   const totalCalories = Object.values(log.meals)
     .flat()
     .reduce((sum, item) => sum + item.calories, 0);
-
-  const loggedMealCount = Object.values(log.meals).flat().length;
 
   async function persist(next: DailyLog) {
     setLog(next);
@@ -79,12 +83,7 @@ export default function TodayScreen() {
     persist(next);
   }
 
-  const mood: CharacterMood =
-    loggedMealCount === 0 ? 'no-log' : loggedMealCount >= 3 ? 'great' : 'good';
-  const moodMessage =
-    loggedMealCount === 0
-      ? '오늘 기록이 아직 없어요'
-      : loggedMealCount >= 3 ? '오늘 기록 잘 챙기고 있어요!' : '조금 더 기록해볼까요?';
+  const { mood, message: moodMessage } = computeCharacterMood(log, goals);
 
   return (
     <KeyboardAvoidingView

@@ -41,8 +41,9 @@
 | 21 | 식단 사진 업로드 시점 | **일단 로컬 uri만 유지, Firebase Storage 업로드는 다음 단계로 보류** | 지금은 Auth+Firestore(텍스트 데이터)만 연동 완료 |
 | 22 | 소스 코드 저장소 | **GitHub public 저장소** (https://github.com/soulrsp/Diet-Assistant-Agent) | Firebase 설정값이 코드에 포함되지만 클라이언트 키는 공개돼도 무방한 설계(#6)이므로 유지. 대신 Firestore 보안 규칙을 반드시 좁혀야 함 |
 | 23 | 배포/접속 방식 | **Expo(EAS) 링크 — Expo Go 앱으로 접속** | 카메라·눈바디 로컬저장·알림 등 네이티브 기능이 전부 정상 동작하는 방식을 선택. GitHub Pages(웹 브라우저) 방식은 채택하지 않음(네이티브 기능 제한) |
-| 24 | 캐릭터 디자인 | **오리지널 "새싹이" 디자인** (동글한 눈물방울형 몸통 + 쌍둥이 새싹 잎) | 사용자가 로스트아크 모코코st 캐릭터를 요청했으나, 모코코는 스마일게이트 저작권 캐릭터라 그대로 재현하지 않고 컨셉만 참고해 새로 디자인(`components/Character.tsx`) |
-| 25 | Google 로그인 방식 | **`expo-auth-session` 브라우저 기반 로그인** (Expo Go 유지) | 네이티브 Google Sign-In은 EAS Build(커스텀 개발 클라이언트)가 필요해 #23의 Expo Go 방식과 충돌. expo-auth-session은 Expo 공식 문서상 deprecated 표시되어 있지만 Expo Go에서 동작하는 유일한 방법이라 채택 |
+| 24 | 캐릭터 디자인 | **오리지널 "새싹이" 디자인** (동글한 눈물방울형 몸통 + 쌍둥이 새싹 잎) | 사용자가 로스트아크 모코코 캐릭터를 요청했으나, 모코코는 스마일게이트 저작권 캐릭터라 그대로 재현하지 않고 컨셉만 참고해 새로 디자인(`components/Character.tsx`). 비영리 목적이어도 저작권 문제는 동일하다고 안내함 |
+| 25 | Google 로그인 방식 | **`expo-auth-session` 브라우저 기반 로그인** (Expo Go 유지) | 네이티브 Google Sign-In은 EAS Build(커스텀 개발 클라이언트)가 필요해 #23의 Expo Go 방식과 충돌. expo-auth-session은 Expo 공식 문서상 deprecated 표시되어 있지만 Expo Go에서 동작하는 유일한 방법이라 채택. 웹 클라이언트 ID는 `lib/googleAuth.ts`에 설정 완료, 리디렉션 URI 등록은 실기기 테스트 후 진행 |
+| 26 | 캐릭터 기분 5단계 | **great / good / neutral / bad(주황) / worst(빨강)** — 별도 "기록 없음" 상태는 두지 않고 worst에 통합 | 판단 기준: 오늘 섭취 칼로리 또는 몸무게가 목표 대비 초과한 비율 중 큰 값 기준 0~15% 초과 시 bad, 15% 초과 시 worst. 초과가 없으면 기록량(끼니 수)으로 great/good/neutral 판단. 로직은 `lib/characterMood.ts` |
 
 ## 반영하지 않기로 한 것 (기존 앱 대비)
 

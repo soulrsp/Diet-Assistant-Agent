@@ -2,15 +2,18 @@ import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Ellipse, Path } from 'react-native-svg';
 
 /**
- * 오리지널 새싹 캐릭터. 포인트/미션 없이, 오늘 기록 여부와 몸무게 변화 방향에 따라
+ * 오리지널 새싹 캐릭터. 포인트/미션 없이, 오늘 기록 여부와 목표 대비 초과 정도에 따라
  * 표정과 배경만 가볍게 바뀐다. (CLAUDE.md #11)
  *
  * 참고: 사용자가 로스트아크 "모코코" 느낌을 요청했지만, 모코코는 스마일게이트의
  * 저작권 있는 캐릭터라 디자인을 그대로 재현하지 않았다. 대신 동글동글한 새싹 생물이라는
  * 아이디어만 참고해 완전히 다른 모양(둥근 눈물방울형 몸통 + 쌍둥이 새싹 잎)으로 새로 그렸다.
+ *
+ * 5단계: great > good > neutral > bad(주황, 차악) > worst(빨강, 최악).
+ * 기록이 전혀 없는 날도 worst로 취급한다(별도 no-log 상태 없음).
  */
 
-export type CharacterMood = 'great' | 'good' | 'neutral' | 'no-log';
+export type CharacterMood = 'great' | 'good' | 'neutral' | 'bad' | 'worst';
 
 type Props = {
   mood: CharacterMood;
@@ -22,7 +25,8 @@ const MOOD_STYLE: Record<CharacterMood, { body: string; leaf: string; bg: string
   great: { body: '#BFE6C9', leaf: '#6FB784', bg: '#EAF6EE' },
   good: { body: '#CDEBD3', leaf: '#7EBF8F', bg: '#F0F7F1' },
   neutral: { body: '#DCE6D6', leaf: '#9AB69E', bg: '#F2F0E6' },
-  'no-log': { body: '#D9D6C6', leaf: '#ADA98F', bg: '#EDEBE0' },
+  bad: { body: '#F5CFA0', leaf: '#D99A4E', bg: '#FBF1E2' },
+  worst: { body: '#F0AAAA', leaf: '#CE6161', bg: '#FBEAEA' },
 };
 
 export default function Character({ mood, message, size = 104 }: Props) {
@@ -47,7 +51,7 @@ export default function Character({ mood, message, size = 104 }: Props) {
         )}
 
         {/* 눈 */}
-        {mood === 'no-log' ? (
+        {mood === 'worst' ? (
           <>
             <Path d="M 32 55 Q 36 50 40 55" stroke="#3A3F33" strokeWidth={3} fill="none" strokeLinecap="round" />
             <Path d="M 60 55 Q 64 50 68 55" stroke="#3A3F33" strokeWidth={3} fill="none" strokeLinecap="round" />
@@ -69,8 +73,11 @@ export default function Character({ mood, message, size = 104 }: Props) {
         {mood === 'neutral' && (
           <Path d="M 40 71 L 60 71" stroke="#3A3F33" strokeWidth={3} fill="none" strokeLinecap="round" />
         )}
-        {mood === 'no-log' && (
-          <Path d="M 38 76 Q 50 68 62 76" stroke="#3A3F33" strokeWidth={3} fill="none" strokeLinecap="round" />
+        {mood === 'bad' && (
+          <Path d="M 39 73 Q 50 67 61 73" stroke="#3A3F33" strokeWidth={3} fill="none" strokeLinecap="round" />
+        )}
+        {mood === 'worst' && (
+          <Path d="M 38 76 Q 50 66 62 76" stroke="#3A3F33" strokeWidth={3} fill="none" strokeLinecap="round" />
         )}
       </Svg>
       <Text style={styles.message}>{message}</Text>
