@@ -18,7 +18,8 @@ WebBrowser.maybeCompleteAuthSession();
  * (CLAUDE.md 참고) 네이티브 Google Sign-In으로 바꾸려면 EAS Build(커스텀 개발 클라이언트)로
  * 전환해야 한다.
  */
-export const GOOGLE_WEB_CLIENT_ID = 'REPLACE_WITH_GOOGLE_WEB_CLIENT_ID.apps.googleusercontent.com';
+export const GOOGLE_WEB_CLIENT_ID =
+  '948226646542-5rqc7eqmapf2g6hu0jhdolfc4q7q4653.apps.googleusercontent.com';
 
 export function useGoogleSignIn() {
   const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
