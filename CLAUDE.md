@@ -42,10 +42,12 @@
 | 22 | 소스 코드 저장소 | **GitHub public 저장소** (https://github.com/soulrsp/Diet-Assistant-Agent) | Firebase 설정값이 코드에 포함되지만 클라이언트 키는 공개돼도 무방한 설계(#6)이므로 유지. 대신 Firestore 보안 규칙을 반드시 좁혀야 함 |
 | 23 | 배포/접속 방식 (폐기됨) | ~~Expo(EAS) 링크 — Expo Go 앱으로 접속~~ | `eas update:configure`가 설정하는 `runtimeVersion`이 있으면 Expo Go에서 해당 업데이트를 아예 열 수 없다는 것을 실제 테스트 중 발견(Expo 공식 문서 확인). 커스텀 dev client 빌드가 필요한데 iOS는 Apple Developer Program(연 $99)이 사실상 필수라 #27로 대체 |
 | 24 | 캐릭터 디자인 | **오리지널 "새싹이" 디자인** (동글한 눈물방울형 몸통 + 쌍둥이 새싹 잎) | 사용자가 로스트아크 모코코 캐릭터를 요청했으나, 모코코는 스마일게이트 저작권 캐릭터라 그대로 재현하지 않고 컨셉만 참고해 새로 디자인(`components/Character.tsx`). 비영리 목적이어도 저작권 문제는 동일하다고 안내함 |
-| 25 | Google 로그인 방식 | **`expo-auth-session` 브라우저 기반 로그인** | #27에서 웹 전용으로 전환되며 오히려 궁합이 더 좋아짐(순수 웹 OAuth 리디렉션). 웹 클라이언트 ID는 `lib/googleAuth.ts`에 설정 완료. GitHub Pages 배포 후에는 Google Cloud Console 리디렉션 URI에 실제 배포 주소(`https://soulrsp.github.io/Diet-Assistant-Agent`)를 등록해야 함 |
+| 25 | Google 로그인 방식 | **`expo-auth-session` 브라우저 기반 로그인** | #27에서 웹 전용으로 전환되며 오히려 궁합이 더 좋아짐(순수 웹 OAuth 리디렉션). 웹 클라이언트 ID는 `lib/googleAuth.ts`에 설정 완료. GitHub Pages 배포 후에는 Google Cloud Console 리디렉션 URI에 실제 배포 주소(`https://soulrsp.github.io/Diet-Assistant-Agent`)를 등록해야 함. **이후 `lib/googleAuth.ts`가 Firebase의 `signInWithPopup` 방식으로 단순화됨** — 웹 전용이라 Google Cloud 클라이언트 ID/리디렉션 URI 등록 없이 Firebase 콘솔에서 Google 제공업체만 켜면 동작 (`expo-auth-session`, `expo-crypto` 의존성 제거) |
 | 26 | 캐릭터 기분 5단계 | **great / good / neutral / bad(주황) / worst(빨강)** — 별도 "기록 없음" 상태는 두지 않고 worst에 통합 | 판단 기준: 오늘 섭취 칼로리 또는 몸무게가 목표 대비 초과한 비율 중 큰 값 기준 0~15% 초과 시 bad, 15% 초과 시 worst. 초과가 없으면 기록량(끼니 수)으로 great/good/neutral 판단. 로직은 `lib/characterMood.ts` |
 | 27 | 최종 배포 방식 | **네이티브 앱 포기, GitHub Pages 웹 버전만 배포** (https://soulrsp.github.io/Diet-Assistant-Agent) | #23이 막히면서 재검토. iOS 실기기 네이티브 설치 비용($99/년)을 피하기 위해 웹 전용으로 전환. main 브랜치에 push하면 GitHub Actions(`.github/workflows/deploy.yml`)가 자동으로 `expo export -p web` 후 gh-pages 브랜치에 배포 |
 | 28 | 웹 전환에 따른 기능 제약 | **눈바디 탭은 웹에서 일단 비활성화**(안내 문구만 표시), 카메라 촬영은 브라우저 지원 범위 내에서만, 알림은 탭을 열어둔 상태에서만 동작 | `expo-file-system`의 로컬 파일 저장이 웹에서 지원되지 않아 발생하는 제약. 추후 IndexedDB 기반 웹 저장소를 추가하는 것을 검토 중 |
+| 29 | 영양제 슬롯 | **사진/칼로리 기록 대신 복용 여부 체크박스만** 표시 | `CHECK_ONLY_SLOTS`(`lib/types.ts`)에 포함된 슬롯은 `MealSlotCard` 대신 `SupplementCheck` 컴포넌트로 렌더링. `DailyLog.checkedSlots`에 저장 |
+| 30 | 사진 기록 기본 동작 | **기본은 사진첩에서 선택**, 카메라 즉시 촬영은 설정에서 켜야 버튼이 나타남 | 설정 탭의 "카메라로 바로 촬영 허용" 토글(`cameraCaptureEnabled`)로 제어 |
 
 ## 반영하지 않기로 한 것 (기존 앱 대비)
 
