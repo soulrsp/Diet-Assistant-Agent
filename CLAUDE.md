@@ -58,10 +58,9 @@
 - 두 사람 데이터 동기화(커플 연동)의 구체적 방식과 시점 — "나중에 구현할 수도 있음" 상태로 보류 중입니다.
 - 캐릭터 일러스트/애니메이션 리소스를 직접 그릴지, 외주/에셋 구매할지 정해지지 않았습니다.
 - 앱 이름이 아직 미정입니다.
-- Firestore 보안 규칙이 아직 테스트 모드(30일 후 자동 잠김, 그 전엔 인증 여부와 무관하게 개방)입니다. 실사용 전에 `request.auth.uid == userId` 조건으로 규칙을 좁혀야 합니다.
+- Firestore 보안 규칙을 `firestore.rules`에 작성해뒀습니다(`request.auth.uid == userId` 조건). 다만 이 파일 자체는 배포되는 게 아니라서, **Firebase 콘솔 → Firestore Database → 규칙 탭에 내용을 붙여넣고 게시**해야 실제로 적용됩니다. Firebase CLI로 자동 배포하려면 사용자가 직접 로그인해야 해서 대신 해드릴 수 없습니다.
 - 식단 사진의 Firebase Storage 업로드는 아직 연동 전입니다(로컬 uri만 사용 중). 다음 단계로 예정.
 - Firebase 콘솔에서 이메일/비밀번호 계정 2개(본인 + 여자친구)가 실제로 생성되었는지는 Claude가 확인할 수 없습니다(로그인 필요). 사용자가 직접 로그인 테스트로 확인 필요.
-- GitHub Pages 활성화(Settings → Pages → Source: gh-pages 브랜치)가 아직 필요합니다. `main`에 push하면 GitHub Actions가 gh-pages 브랜치까지는 만들어주지만, Pages 노출 설정은 저장소 설정에서 한 번 켜야 합니다.
 - `app.json`에 EAS/네이티브 배포 관련 설정(`extra.eas`, `owner`, `updates`, `runtimeVersion`)이 남아있습니다. 네이티브 배포를 포기했으므로 더 이상 쓰이지 않지만, 나중에 다시 필요할 수 있어 일단 삭제하지 않았습니다.
 - `app.json`의 android permissions에 `android.permission.RECORD_AUDIO`가 중복 등록되어 있습니다. 네이티브 배포를 포기했으므로 실질적 영향은 없습니다.
 
