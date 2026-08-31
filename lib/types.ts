@@ -1,0 +1,55 @@
+export type MealSlotId = 'breakfast' | 'snack' | 'supplement' | 'lunch' | 'dinner';
+
+export const DEFAULT_MEAL_ORDER: MealSlotId[] = [
+  'breakfast',
+  'snack',
+  'supplement',
+  'lunch',
+  'dinner',
+];
+
+export const MEAL_SLOT_LABEL: Record<MealSlotId, string> = {
+  breakfast: '아침',
+  snack: '간식',
+  supplement: '영양제',
+  lunch: '점심',
+  dinner: '저녁',
+};
+
+export type Macros = {
+  calories: number;
+  carbs: number;
+  protein: number;
+  fat: number;
+};
+
+export type MealItem = {
+  id: string;
+  name: string;
+  photoUri?: string;
+  source: 'photo-auto' | 'manual';
+} & Macros;
+
+// dateKey 형식: 'YYYY-MM-DD'
+export type DailyLog = {
+  dateKey: string;
+  weightKg?: number;
+  meals: Record<MealSlotId, MealItem[]>;
+};
+
+export type Goals = {
+  targetWeightKg: number;
+  targetCalories: number;
+};
+
+export type ReminderSettings = {
+  enabled: boolean;
+  hour: number; // 0-23
+  minute: number; // 0-59
+};
+
+export type TrendPoint = {
+  dateKey: string;
+  weightKg: number;
+  calories: number;
+};
