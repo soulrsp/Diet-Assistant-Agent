@@ -8,6 +8,10 @@ import { Macros } from './types';
  * API 키는 소스 코드에 두지 않는다 — public 저장소라 커밋되면 그대로 노출되기 때문이다.
  * 사용자가 설정 탭에서 직접 발급받은 키를 입력하면 이 기기에만 저장해서 사용한다. (lib/apiKeys.ts)
  *
+ * 공공데이터포털은 키를 "인코딩"/"디코딩" 두 형태로 나눠 제공한다. 이 코드는 URLSearchParams로
+ * 알아서 URL 인코딩을 하므로 "디코딩" 키가 맞는데, 사용자가 "인코딩" 키를 붙여넣으면 이중 인코딩되어
+ * 403(SERVICE_KEY_IS_NOT_REGISTERED_ERROR)이 난다. 어느 쪽을 넣어도 동작하도록 미리 디코딩해서 쓴다.
+ *
  * 실제 호출로 확인한 사실:
  * - 응답 형태: { header: {...}, body: { items: [...], totalCount } }
  * - FOOD_NM_KR 파라미터는 부분 일치 검색을 지원한다(예: "김치찌개" → "김치찌개_꽁치" 등 375건).
@@ -30,10 +34,12 @@ export type NutritionResult = Macros & { name: string };
  * 없으면 첫 번째 결과를 사용한다. 매칭 결과가 없거나 API 호출이 실패하면 예외를 던진다.
  */
 export async function searchNutritionByName(foodName: string): Promise<NutritionResult> {
-  const apiKey = await getNutritionApiKey();
-  if (!apiKey) {
+  const rawApiKey = await getNutritionApiKey();
+  if (!rawApiKey) {
     throw new Error('식약처 API 키가 설정되지 않았어요. 설정 탭에서 등록해주세요.');
   }
+  // "인코딩" 키(%2B 등 포함)가 들어와도 동작하도록 한 번 디코딩해 원본 형태로 정규화한다.
+  const apiKey = rawApiKey.includes('%') ? decodeURIComponent(rawApiKey) : rawApiKey;
 
   const url = new URL(BASE_URL);
   url.searchParams.set('serviceKey', apiKey);
@@ -42,12 +48,15 @@ export async function searchNutritionByName(foodName: string): Promise<Nutrition
   url.searchParams.set('FOOD_NM_KR', foodName);
 
   const response = await fetch(url.toString());
+  const data = await response.json();
+
+  const errMsg = data?.OpenAPI_ServiceResponse?.cmmMsgHeader?.returnAuthMsg;
+  if (errMsg) {
+    throw new Error(`식약처 API 인증 오류: ${errMsg}`);
+  }
   if (!response.ok) {
     throw new Error(`식약처 API 오류 (${response.status})`);
   }
-
-  const data = await response.json();
-
   if (data?.header?.resultCode && data.header.resultCode !== '00') {
     throw new Error(`식약처 API 오류: ${data.header.resultMsg}`);
   }
