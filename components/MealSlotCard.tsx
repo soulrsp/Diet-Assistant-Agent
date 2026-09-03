@@ -3,11 +3,8 @@ import { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import { Text } from '@/components/Themed';
-import {
-  LOW_CONFIDENCE_THRESHOLD,
-  recognizeFoodPhoto,
-  searchFoodByName,
-} from '@/lib/mockVision';
+import { identifyFoodFromPhoto } from '@/lib/geminiVision';
+import { searchNutritionByName } from '@/lib/nutritionApi';
 import { MealItem, MealSlotId, MEAL_SLOT_LABEL, Macros } from '@/lib/types';
 
 type Props = {
@@ -18,13 +15,19 @@ type Props = {
   onRemove: (itemId: string) => void;
 };
 
-type Mode = 'idle' | 'processing' | 'confirm' | 'search';
+type Mode = 'idle' | 'processing' | 'confirm' | 'notfound' | 'search' | 'manual';
+
+type PendingFood = Macros & { name: string; confidence?: number };
 
 export default function MealSlotCard({ slot, items, cameraCaptureEnabled, onAdd, onRemove }: Props) {
   const [mode, setMode] = useState<Mode>('idle');
   const [pendingPhotoUri, setPendingPhotoUri] = useState<string | undefined>();
-  const [pendingResult, setPendingResult] = useState<(Macros & { name: string; confidence?: number }) | null>(null);
+  const [pendingResult, setPendingResult] = useState<PendingFood | null>(null);
+  const [notFoundName, setNotFoundName] = useState('');
+  const [notFoundMessage, setNotFoundMessage] = useState('');
   const [query, setQuery] = useState('');
+  const [searching, setSearching] = useState(false);
+  const [manualForm, setManualForm] = useState({ name: '', calories: '', carbs: '', protein: '', fat: '' });
 
   const slotCalories = items.reduce((sum, item) => sum + item.calories, 0);
 
@@ -48,9 +51,27 @@ export default function MealSlotCard({ slot, items, cameraCaptureEnabled, onAdd,
     setPendingPhotoUri(uri);
     setMode('processing');
 
-    const recognized = await recognizeFoodPhoto(uri);
-    setPendingResult(recognized);
-    setMode('confirm');
+    let guessedName = '';
+    try {
+      const guess = await identifyFoodFromPhoto(uri);
+      guessedName = guess.name;
+      const nutrition = await searchNutritionByName(guess.name);
+      setPendingResult({ ...nutrition, confidence: guess.confidence });
+      setMode('confirm');
+    } catch (error) {
+      const message = guessedName
+        ? `"${guessedName}"(으)로 인식했지만, 식약처 DB에서 정확히 일치하는 식품을 찾지 못했어요.`
+        : error instanceof Error
+          ? error.message
+          : '음식을 인식하지 못했습니다.';
+      goToNotFound(guessedName, message);
+    }
+  }
+
+  function goToNotFound(name: string, message: string) {
+    setNotFoundName(name);
+    setNotFoundMessage(message);
+    setMode('notfound');
   }
 
   function confirmPending() {
@@ -68,14 +89,35 @@ export default function MealSlotCard({ slot, items, cameraCaptureEnabled, onAdd,
     reset();
   }
 
-  function addManual(food: Macros & { name: string }) {
+  async function handleSearchSubmit() {
+    if (!query.trim()) return;
+    setSearching(true);
+    try {
+      const nutrition = await searchNutritionByName(query.trim());
+      setPendingResult(nutrition);
+      setMode('confirm');
+    } catch (error) {
+      goToNotFound(query.trim(), '정확히 일치하는 식품을 찾지 못했어요. 직접 입력해주세요.');
+    } finally {
+      setSearching(false);
+    }
+  }
+
+  function goToManualEntry() {
+    setManualForm({ name: notFoundName, calories: '', carbs: '', protein: '', fat: '' });
+    setMode('manual');
+  }
+
+  function submitManualEntry() {
+    if (!manualForm.name.trim()) return;
     onAdd({
       id: `${Date.now()}`,
-      name: food.name,
-      calories: food.calories,
-      carbs: food.carbs,
-      protein: food.protein,
-      fat: food.fat,
+      name: manualForm.name.trim(),
+      calories: parseInt(manualForm.calories, 10) || 0,
+      carbs: parseInt(manualForm.carbs, 10) || 0,
+      protein: parseInt(manualForm.protein, 10) || 0,
+      fat: parseInt(manualForm.fat, 10) || 0,
+      photoUri: pendingPhotoUri,
       source: 'manual',
     });
     reset();
@@ -85,11 +127,10 @@ export default function MealSlotCard({ slot, items, cameraCaptureEnabled, onAdd,
     setMode('idle');
     setPendingPhotoUri(undefined);
     setPendingResult(null);
+    setNotFoundName('');
+    setNotFoundMessage('');
     setQuery('');
   }
-
-  const searchResults = mode === 'search' ? searchFoodByName(query) : [];
-  const isLowConfidence = (pendingResult?.confidence ?? 1) < LOW_CONFIDENCE_THRESHOLD;
 
   return (
     <View style={styles.card}>
@@ -131,7 +172,7 @@ export default function MealSlotCard({ slot, items, cameraCaptureEnabled, onAdd,
       {mode === 'processing' && (
         <View style={styles.processingRow}>
           <ActivityIndicator size="small" color="#E1611F" />
-          <Text style={styles.processingText}>음식 인식 중... (목업)</Text>
+          <Text style={styles.processingText}>음식 인식 중...</Text>
         </View>
       )}
 
@@ -142,9 +183,6 @@ export default function MealSlotCard({ slot, items, cameraCaptureEnabled, onAdd,
             {pendingResult.calories}kcal · 탄{pendingResult.carbs} 단{pendingResult.protein} 지
             {pendingResult.fat}
           </Text>
-          {isLowConfidence && (
-            <Text style={styles.warnText}>인식 정확도가 낮아요. 다르면 직접 검색으로 바꿔주세요.</Text>
-          )}
           <View style={styles.actionRow}>
             <Pressable style={styles.actionBtn} onPress={confirmPending}>
               <Text style={styles.actionBtnText}>이 결과로 기록</Text>
@@ -159,27 +197,101 @@ export default function MealSlotCard({ slot, items, cameraCaptureEnabled, onAdd,
         </View>
       )}
 
+      {mode === 'notfound' && (
+        <View style={styles.confirmBox}>
+          <Text style={styles.warnText}>{notFoundMessage}</Text>
+          <View style={styles.actionRow}>
+            <Pressable style={styles.actionBtn} onPress={goToManualEntry}>
+              <Text style={styles.actionBtnText}>직접 입력</Text>
+            </Pressable>
+            <Pressable style={styles.actionBtnGhost} onPress={() => setMode('search')}>
+              <Text style={styles.actionBtnGhostText}>다시 검색</Text>
+            </Pressable>
+            <Pressable style={styles.actionBtnGhost} onPress={reset}>
+              <Text style={styles.actionBtnGhostText}>취소</Text>
+            </Pressable>
+          </View>
+        </View>
+      )}
+
       {mode === 'search' && (
         <View style={styles.confirmBox}>
           <TextInput
             style={styles.searchInput}
-            placeholder="음식 이름 검색 (예: 현미밥)"
+            placeholder="정확한 음식 이름 (예: 된장찌개)"
             value={query}
             onChangeText={setQuery}
+            onSubmitEditing={handleSearchSubmit}
             autoFocus
           />
-          {searchResults.map((food) => (
-            <Pressable key={food.name} style={styles.searchResultRow} onPress={() => addManual(food)}>
-              <Text style={styles.itemName}>{food.name}</Text>
-              <Text style={styles.itemMacro}>{food.calories}kcal</Text>
+          <Text style={styles.hintText}>식약처 DB에서 부분 일치로 검색해요. 결과가 이상하면 직접 입력해주세요.</Text>
+          <View style={styles.actionRow}>
+            <Pressable style={styles.actionBtn} onPress={handleSearchSubmit} disabled={searching}>
+              <Text style={styles.actionBtnText}>{searching ? '검색 중...' : '검색'}</Text>
             </Pressable>
-          ))}
-          {query.length > 0 && searchResults.length === 0 && (
-            <Text style={styles.warnText}>검색 결과가 없어요. (목업 DB에는 8종만 있어요)</Text>
-          )}
-          <Pressable style={styles.actionBtnGhost} onPress={reset}>
-            <Text style={styles.actionBtnGhostText}>취소</Text>
-          </Pressable>
+            <Pressable
+              style={styles.actionBtnGhost}
+              onPress={() => {
+                setNotFoundName(query.trim());
+                goToManualEntry();
+              }}>
+              <Text style={styles.actionBtnGhostText}>바로 직접 입력</Text>
+            </Pressable>
+            <Pressable style={styles.actionBtnGhost} onPress={reset}>
+              <Text style={styles.actionBtnGhostText}>취소</Text>
+            </Pressable>
+          </View>
+        </View>
+      )}
+
+      {mode === 'manual' && (
+        <View style={styles.confirmBox}>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="음식 이름"
+            value={manualForm.name}
+            onChangeText={(name) => setManualForm((f) => ({ ...f, name }))}
+          />
+          <View style={styles.manualRow}>
+            <TextInput
+              style={styles.manualInput}
+              placeholder="칼로리(kcal)"
+              keyboardType="number-pad"
+              value={manualForm.calories}
+              onChangeText={(calories) => setManualForm((f) => ({ ...f, calories }))}
+            />
+            <TextInput
+              style={styles.manualInput}
+              placeholder="탄수화물(g)"
+              keyboardType="number-pad"
+              value={manualForm.carbs}
+              onChangeText={(carbs) => setManualForm((f) => ({ ...f, carbs }))}
+            />
+          </View>
+          <View style={styles.manualRow}>
+            <TextInput
+              style={styles.manualInput}
+              placeholder="단백질(g)"
+              keyboardType="number-pad"
+              value={manualForm.protein}
+              onChangeText={(protein) => setManualForm((f) => ({ ...f, protein }))}
+            />
+            <TextInput
+              style={styles.manualInput}
+              placeholder="지방(g)"
+              keyboardType="number-pad"
+              value={manualForm.fat}
+              onChangeText={(fat) => setManualForm((f) => ({ ...f, fat }))}
+            />
+          </View>
+          <View style={styles.actionRow}>
+            <Pressable style={styles.actionBtn} onPress={submitManualEntry}>
+              <Text style={styles.actionBtnText}>추가</Text>
+            </Pressable>
+            <Pressable style={styles.actionBtnGhost} onPress={reset}>
+              <Text style={styles.actionBtnGhostText}>취소</Text>
+            </Pressable>
+          </View>
         </View>
       )}
     </View>
@@ -274,6 +386,10 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#B4791A',
   },
+  hintText: {
+    fontSize: 11,
+    color: '#6C7263',
+  },
   searchInput: {
     borderWidth: 1,
     borderColor: '#E2DFCF',
@@ -282,11 +398,17 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     fontSize: 14,
   },
-  searchResultRow: {
+  manualRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 6,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F2F0E6',
+    gap: 8,
+  },
+  manualInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#E2DFCF',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    fontSize: 14,
   },
 });

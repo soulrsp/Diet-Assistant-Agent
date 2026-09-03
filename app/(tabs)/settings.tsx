@@ -3,6 +3,7 @@ import { useFocusEffect } from 'expo-router';
 import { Platform, Pressable, ScrollView, StyleSheet, Switch, TextInput } from 'react-native';
 
 import { Text, View } from '@/components/Themed';
+import { getGeminiApiKey, getNutritionApiKey, setGeminiApiKey, setNutritionApiKey } from '@/lib/apiKeys';
 import { useAuth } from '@/lib/authContext';
 import { DUMMY_GOALS } from '@/lib/dummyData';
 import { applyReminderSchedule } from '@/lib/notifications';
@@ -29,17 +30,22 @@ export default function SettingsScreen() {
   const [reminder, setReminder] = useState<ReminderSettings>({ enabled: false, hour: 21, minute: 0 });
   const [characterOn, setCharacterOn] = useState(true);
   const [cameraOn, setCameraOn] = useState(false);
+  const [geminiKey, setGeminiKeyText] = useState('');
+  const [nutritionKey, setNutritionKeyText] = useState('');
 
   useFocusEffect(
     useCallback(() => {
       (async () => {
-        const [mealOrder, savedGoals, savedReminder, charEnabled, cameraEnabled] = await Promise.all([
-          getMealOrder(),
-          getGoals(),
-          getReminderSettings(),
-          getCharacterEnabled(),
-          getCameraCaptureEnabled(),
-        ]);
+        const [mealOrder, savedGoals, savedReminder, charEnabled, cameraEnabled, savedGeminiKey, savedNutritionKey] =
+          await Promise.all([
+            getMealOrder(),
+            getGoals(),
+            getReminderSettings(),
+            getCharacterEnabled(),
+            getCameraCaptureEnabled(),
+            getGeminiApiKey(),
+            getNutritionApiKey(),
+          ]);
         setOrder(mealOrder);
         const g = savedGoals ?? DUMMY_GOALS;
         setLocalGoals(g);
@@ -48,6 +54,8 @@ export default function SettingsScreen() {
         setReminder(savedReminder);
         setCharacterOn(charEnabled);
         setCameraOn(cameraEnabled);
+        setGeminiKeyText(savedGeminiKey ?? '');
+        setNutritionKeyText(savedNutritionKey ?? '');
       })();
     }, [])
   );
@@ -94,6 +102,14 @@ export default function SettingsScreen() {
   async function toggleCamera(value: boolean) {
     setCameraOn(value);
     await setCameraCaptureEnabled(value);
+  }
+
+  async function saveGeminiKey() {
+    await setGeminiApiKey(geminiKey);
+  }
+
+  async function saveNutritionKey() {
+    await setNutritionApiKey(nutritionKey);
   }
 
   return (
@@ -191,6 +207,31 @@ export default function SettingsScreen() {
             </View>
           </View>
         ))}
+      </Section>
+
+      <Section title="음식 인식 API 키">
+        <Text style={styles.webNotice}>
+          사진으로 음식을 인식하려면 두 API 키가 필요해요. 키는 서버에 올라가지 않고 이
+          기기에만 저장됩니다.
+        </Text>
+        <Text style={styles.keyLabel}>Gemini API 키</Text>
+        <TextInput
+          style={styles.keyInput}
+          placeholder="AQ.로 시작하는 키 (aistudio.google.com/apikey)"
+          autoCapitalize="none"
+          value={geminiKey}
+          onChangeText={setGeminiKeyText}
+          onBlur={saveGeminiKey}
+        />
+        <Text style={styles.keyLabel}>식약처 식품영양성분DB API 키</Text>
+        <TextInput
+          style={styles.keyInput}
+          placeholder="공공데이터포털에서 발급받은 일반 인증키(Decoding)"
+          autoCapitalize="none"
+          value={nutritionKey}
+          onChangeText={setNutritionKeyText}
+          onBlur={saveNutritionKey}
+        />
       </Section>
 
       <Section title="계정">
@@ -360,5 +401,17 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#B4791A',
     marginBottom: 4,
+  },
+  keyLabel: {
+    fontSize: 12,
+    color: '#6C7263',
+  },
+  keyInput: {
+    borderWidth: 1,
+    borderColor: '#E2DFCF',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 13,
   },
 });
