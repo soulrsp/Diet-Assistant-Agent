@@ -59,11 +59,8 @@ export default function MealSlotCard({ slot, items, cameraCaptureEnabled, onAdd,
       setPendingResult({ ...nutrition, confidence: guess.confidence });
       setMode('confirm');
     } catch (error) {
-      const message = guessedName
-        ? `"${guessedName}"(으)로 인식했지만, 식약처 DB에서 정확히 일치하는 식품을 찾지 못했어요.`
-        : error instanceof Error
-          ? error.message
-          : '음식을 인식하지 못했습니다.';
+      const rawMessage = error instanceof Error ? error.message : '음식을 인식하지 못했습니다.';
+      const message = guessedName ? `"${guessedName}"(으)로 인식했어요. ${rawMessage}` : rawMessage;
       goToNotFound(guessedName, message);
     }
   }
