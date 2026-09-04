@@ -17,6 +17,14 @@ export type GeminiFoodGuess = {
   confidence: number;
 };
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// 무료 티어는 트래픽이 몰리면 일시적으로 과부하 응답(429/503/530 등)을 준다 — 잠깐 쉬었다 재시도한다.
+const RETRYABLE_STATUS = new Set([429, 503, 529, 530]);
+const MAX_RETRIES = 2;
+
 async function photoUriToBase64(uri: string): Promise<{ base64: string; mimeType: string }> {
   const response = await fetch(uri);
   const blob = await response.blob();
@@ -52,35 +60,50 @@ export async function identifyFoodFromPhoto(photoUri: string): Promise<GeminiFoo
     '(예: "된장찌개", "현미밥", "삼겹살구이"). 음식이 아니거나 알아볼 수 없으면 ' +
     'foodName을 "unknown"으로, confidence를 0으로 답해.';
 
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [{ text: prompt }, { inline_data: { mime_type: mimeType, data: base64 } }],
-          },
-        ],
-        generationConfig: {
-          responseMimeType: 'application/json',
-          responseSchema: {
-            type: 'OBJECT',
-            properties: {
-              foodName: { type: 'STRING' },
-              confidence: { type: 'NUMBER' },
-            },
-            required: ['foodName', 'confidence'],
-          },
+  const requestBody = JSON.stringify({
+    contents: [
+      {
+        parts: [{ text: prompt }, { inline_data: { mime_type: mimeType, data: base64 } }],
+      },
+    ],
+    generationConfig: {
+      responseMimeType: 'application/json',
+      responseSchema: {
+        type: 'OBJECT',
+        properties: {
+          foodName: { type: 'STRING' },
+          confidence: { type: 'NUMBER' },
         },
-      }),
-    }
-  );
+        required: ['foodName', 'confidence'],
+      },
+    },
+  });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Gemini API 오류 (${response.status}): ${errorText}`);
+  let response: Response | undefined;
+  let lastErrorText = '';
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: requestBody,
+      }
+    );
+
+    if (response.ok) break;
+    if (!RETRYABLE_STATUS.has(response.status) || attempt === MAX_RETRIES) {
+      lastErrorText = await response.text();
+      break;
+    }
+    await sleep(1000 * (attempt + 1));
+  }
+
+  if (!response || !response.ok) {
+    if (RETRYABLE_STATUS.has(response?.status ?? 0)) {
+      throw new Error('Gemini 서버가 혼잡해요. 잠시 후 다시 시도해주세요.');
+    }
+    throw new Error(`Gemini API 오류 (${response?.status}): ${lastErrorText}`);
   }
 
   const data = await response.json();
