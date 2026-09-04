@@ -30,8 +30,27 @@ function toNumber(value: unknown): number {
 export type NutritionResult = Macros & { name: string };
 
 /**
- * 음식명으로 식약처 DB를 검색한다. 여러 결과 중 이름이 정확히 같은 항목을 우선하고,
- * 없으면 첫 번째 결과를 사용한다. 매칭 결과가 없거나 API 호출이 실패하면 예외를 던진다.
+ * 부분 일치 검색 결과 중 가장 그럴듯한 항목을 고른다.
+ * - 이름이 정확히 같은 항목이 있으면 그것을 최우선으로 한다.
+ * - 그다음은 DB_GRP_NM이 "음식"(실제 요리)인 항목을 "가공식품"(과자·젤리 등 포장 상품)보다 우선한다.
+ *   그렇지 않으면 "모듬초밥" 검색이 "3D 모듬초밥모양 젤리" 같은 엉뚱한 상품에 매칭되는 문제가 생긴다.
+ * - 마지막으로 이름이 짧은(더 일반적인) 항목을 우선한다.
+ */
+function pickBestMatch(rows: any[], foodName: string): any {
+  const exact = rows.find((r) => r.FOOD_NM_KR === foodName);
+  if (exact) return exact;
+
+  const sorted = [...rows].sort((a, b) => {
+    const aIsDish = a.DB_GRP_NM === '음식' ? 0 : 1;
+    const bIsDish = b.DB_GRP_NM === '음식' ? 0 : 1;
+    if (aIsDish !== bIsDish) return aIsDish - bIsDish;
+    return (a.FOOD_NM_KR?.length ?? 0) - (b.FOOD_NM_KR?.length ?? 0);
+  });
+  return sorted[0];
+}
+
+/**
+ * 음식명으로 식약처 DB를 검색한다. 매칭 결과가 없거나 API 호출이 실패하면 예외를 던진다.
  */
 export async function searchNutritionByName(foodName: string): Promise<NutritionResult> {
   const rawApiKey = await getNutritionApiKey();
@@ -43,7 +62,7 @@ export async function searchNutritionByName(foodName: string): Promise<Nutrition
 
   const url = new URL(BASE_URL);
   url.searchParams.set('serviceKey', apiKey);
-  url.searchParams.set('numOfRows', '10');
+  url.searchParams.set('numOfRows', '30');
   url.searchParams.set('type', 'json');
   url.searchParams.set('FOOD_NM_KR', foodName);
 
@@ -66,7 +85,7 @@ export async function searchNutritionByName(foodName: string): Promise<Nutrition
     throw new Error(`"${foodName}"에 대한 식품을 찾지 못했습니다.`);
   }
 
-  const row = rows.find((r) => r.FOOD_NM_KR === foodName) ?? rows[0];
+  const row = pickBestMatch(rows, foodName);
 
   return {
     name: row.FOOD_NM_KR ?? foodName,
